@@ -1,23 +1,49 @@
 package com.junia.isen.m1_devsec_sa;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
-import androidx.biometric.BiometricPrompt;
-import androidx.core.content.ContextCompat;
-
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import androidx.room.Room;
+
+import com.junia.isen.m1_devsec_sa.api.BankApiService;
+import com.junia.isen.m1_devsec_sa.database.AccountsDatabase;
+import com.junia.isen.m1_devsec_sa.database.UserDatabase;
+import com.junia.isen.m1_devsec_sa.model.Account;
+import com.junia.isen.m1_devsec_sa.model.User;
+
+import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
+    // AUTH UTILITIES //
     Executor executor; //object that executes submitted Runnable tasks
     BiometricPrompt biometricPrompt;
     BiometricPrompt.PromptInfo promptInfo;
+
+    // API UTILITIES //
+    private UserDatabase uDb;
+    private AccountsDatabase accDb;
+    public static User user;
+    public static List<Account> AccountsList;
+    private BankApiService bankApiService;
+    private Executor backgroundExecutor = Executors.newSingleThreadExecutor();
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // ********  BEGIN AUTH PART ******** //
         // Prompt at launch
         executor = ContextCompat.getMainExecutor(this);
 
@@ -28,10 +54,11 @@ public class MainActivity extends AppCompatActivity {
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
                 Toast.makeText(MainActivity.this,"Success",Toast.LENGTH_LONG).show(); // Display in toast
-                setContentView(R.layout.activity_main); //set initial view
+
+                startApp(savedInstanceState);
             }
 
-                // Auth error
+            // Auth error
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
@@ -49,14 +76,75 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
         promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Vérification par emprunte nécessaire")
+                .setTitle("Vérification par empreinte nécessaire")
                 .setDescription("Posez votre doigt")
                 .setNegativeButtonText("Exit")
                 .build();
 
         biometricPrompt.authenticate(promptInfo);
-
+        // ********  END AUTH PART ******** //
     }
+
+
+
+
+    private void startApp(Bundle savedInstanceState){
+        // ********  BEGIN API PART ******** //
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://6007f1a4309f8b0017ee5022.mockapi.io/api/m1/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        bankApiService = retrofit.create(BankApiService.class);
+
+        //New thread pour la bdd
+        backgroundExecutor.execute(()-> {
+            uDb = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "user_database.db").build();
+            accDb = Room.databaseBuilder(getApplicationContext(), AccountsDatabase.class, "accounts_database.db").build();
+        });
+
+
+        backgroundExecutor.execute(()-> {
+            loadFromApiAndSave();
+            user = uDb.UserDao().getUser();
+            AccountsList = accDb.AccountsDao().getAllAccounts();
+
+            runOnUiThread(() -> {
+                if(savedInstanceState == null){
+                    setContentView(R.layout.activity_main); //set initial view
+
+                    // display accounts and user
+                }
+            });
+        });
+        // ********  END API PART ******** //
+    }
+
+
+    // ********  BEGIN API PART ******** //
+    private void loadFromApiAndSave(){
+        // Get user + accounts from API
+        try {
+            Response<List<Account>> responseAccounts = bankApiService.getAccounts().execute();
+            Response<User> responseUser = bankApiService.getUser().execute();
+            if(responseAccounts.isSuccessful() && responseUser.isSuccessful()){
+                List<Account> accounts = responseAccounts.body();
+                User user = responseUser.body();
+                Log.w("Bank APP","Accounts: "+ accounts.size());
+
+                // Save accounts in db
+                for(Account account : accounts){
+                    accDb.AccountsDao().insert(account);
+                }
+                // save user in db
+                uDb.UserDao().insert(user);
+            }
+            else{
+                Log.w("Bank APP","resquest error");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    // ********  END API PART ******** //
 }

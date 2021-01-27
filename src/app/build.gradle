@@ -37,4 +37,14 @@ dependencies {
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+    //room
+    def room_version = "2.2.5"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+
+    //retrofit
+    implementation 'com.google.code.gson:gson:2.8.6' // traite les fichiers json
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0' // fait les appels
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0' // permet de supporter les retours json dans les appels REST
 }
