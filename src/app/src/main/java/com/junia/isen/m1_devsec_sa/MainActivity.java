@@ -7,6 +7,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricPrompt;
+
 import androidx.core.content.ContextCompat;
 import androidx.room.Room;
 
@@ -111,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle("Vérification par empreinte nécessaire")
                 .setDescription("Posez votre doigt")
                 .setNegativeButtonText("Exit")
+                .setDeviceCredentialAllowed(false)
                 .build();
 
         biometricPrompt.authenticate(promptInfo);
