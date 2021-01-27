@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     Executor executor; //object that executes submitted Runnable tasks
     BiometricPrompt biometricPrompt;
     BiometricPrompt.PromptInfo promptInfo;
+    private boolean authorized = false;
 
     // API UTILITIES //
     private UserDatabase uDb;
@@ -39,11 +40,42 @@ public class MainActivity extends AppCompatActivity {
     private BankApiService bankApiService;
     private Executor backgroundExecutor = Executors.newSingleThreadExecutor();
 
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ********  BEGIN AUTH PART ******** //
+        // ask for auth
+        askForAuth(savedInstanceState);
+    }
+
+
+
+
+
+
+
+    // ********************************************** //
+    // Start Ui and display data                      //
+    // ********************************************** //
+    private void startUi(Bundle savedInstanceState){
+        if(savedInstanceState == null){
+            setContentView(R.layout.activity_main); //set initial view
+
+            // display accounts and user
+        }
+    }
+
+
+
+
+    // ********************************************** //
+    // Ask user for auth to enter app                 //
+    // ********************************************** //
+    private void askForAuth (Bundle savedInstanceState){
         // Prompt at launch
         executor = ContextCompat.getMainExecutor(this);
 
@@ -54,8 +86,7 @@ public class MainActivity extends AppCompatActivity {
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
                 Toast.makeText(MainActivity.this,"Success",Toast.LENGTH_LONG).show(); // Display in toast
-
-                startApp(savedInstanceState);
+                startBackgroundThread(savedInstanceState);
             }
 
             // Auth error
@@ -83,14 +114,17 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         biometricPrompt.authenticate(promptInfo);
-        // ********  END AUTH PART ******** //
     }
 
 
 
 
-    private void startApp(Bundle savedInstanceState){
-        // ********  BEGIN API PART ******** //
+
+
+    // ********************************************** //
+    // Start bg thread to get data then start app     //
+    // ********************************************** //
+    private void startBackgroundThread(Bundle savedInstanceState){
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://6007f1a4309f8b0017ee5022.mockapi.io/api/m1/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -110,18 +144,19 @@ public class MainActivity extends AppCompatActivity {
             AccountsList = accDb.AccountsDao().getAllAccounts();
 
             runOnUiThread(() -> {
-                if(savedInstanceState == null){
-                    setContentView(R.layout.activity_main); //set initial view
-
-                    // display accounts and user
-                }
+                // start ui
+                startUi(savedInstanceState);
             });
         });
-        // ********  END API PART ******** //
     }
 
 
-    // ********  BEGIN API PART ******** //
+
+
+
+    // ********************************************** //
+    // Get data from API then save-it in local DB     //
+    // ********************************************** //
     private void loadFromApiAndSave(){
         // Get user + accounts from API
         try {
@@ -146,5 +181,4 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-    // ********  END API PART ******** //
 }
