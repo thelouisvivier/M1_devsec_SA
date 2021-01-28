@@ -2,6 +2,10 @@ package com.junia.isen.m1_devsec_sa;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -45,7 +49,9 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
     @Override
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
@@ -65,6 +71,20 @@ public class MainActivity extends AppCompatActivity {
     private void startUi(Bundle savedInstanceState){
         if(savedInstanceState == null){
             setContentView(R.layout.activity_main); //set initial view
+            final Button button = findViewById(R.id.mybutton);
+            final TextView texte = findViewById(R.id.patate);
+            button.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    // Code here executes on main thread after user presses button
+                    Toast.makeText(getApplicationContext(),"requête en cours",Toast.LENGTH_SHORT).show();
+                    /*User myUser = uDb.UserDao().getUser();
+                    List<Account> myAccounts = accDb.AccountsDao().getAllAccounts();*/
+                    texte.setText("nimporte quoi ");
+                }
+            });
+
+
+
 
             // display accounts and user
         }
