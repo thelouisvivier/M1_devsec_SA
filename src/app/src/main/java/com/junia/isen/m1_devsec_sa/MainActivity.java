@@ -4,14 +4,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricPrompt;
-
 import androidx.core.content.ContextCompat;
 import androidx.room.Room;
 
@@ -40,8 +38,8 @@ public class MainActivity extends AppCompatActivity {
     // API UTILITIES //
     private UserDatabase uDb;
     private AccountsDatabase accDb;
-    public static User user;
-    public static List<Account> AccountsList;
+    public static User myUser;
+    public static List<Account> myAccountsList;
     private BankApiService bankApiService;
     private Executor backgroundExecutor = Executors.newSingleThreadExecutor();
 
@@ -72,14 +70,13 @@ public class MainActivity extends AppCompatActivity {
         if(savedInstanceState == null){
             setContentView(R.layout.activity_main); //set initial view
             final Button button = findViewById(R.id.mybutton);
-            final TextView texte = findViewById(R.id.patate);
+            final TextView text = findViewById(R.id.patate);
             button.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     // Code here executes on main thread after user presses button
                     Toast.makeText(getApplicationContext(),"requête en cours",Toast.LENGTH_SHORT).show();
-                    /*User myUser = uDb.UserDao().getUser();
-                    List<Account> myAccounts = accDb.AccountsDao().getAllAccounts();*/
-                    texte.setText("nimporte quoi ");
+                    refreshData();
+                    text.setText((CharSequence) myUser.lastname + myUser.name);
                 }
             });
 
@@ -162,13 +159,37 @@ public class MainActivity extends AppCompatActivity {
 
         backgroundExecutor.execute(()-> {
             loadFromApiAndSave();
-            user = uDb.UserDao().getUser();
-            AccountsList = accDb.AccountsDao().getAllAccounts();
+            myUser = uDb.UserDao().getUser();
+            myAccountsList = accDb.AccountsDao().getAllAccounts();
 
             runOnUiThread(() -> {
                 // start ui
                 startUi(savedInstanceState);
             });
+        });
+    }
+
+    // ********************************************** //
+    // Start bg thread to get data then start app     //
+    // ********************************************** //
+    private void refreshData(){
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://6007f1a4309f8b0017ee5022.mockapi.io/api/m1/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        bankApiService = retrofit.create(BankApiService.class);
+
+        //New thread pour la bdd
+        backgroundExecutor.execute(()-> {
+            uDb = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "user_database.db").build();
+            accDb = Room.databaseBuilder(getApplicationContext(), AccountsDatabase.class, "accounts_database.db").build();
+        });
+
+
+        backgroundExecutor.execute(()-> {
+            loadFromApiAndSave();
+            myUser = uDb.UserDao().getUser();
+            myAccountsList = accDb.AccountsDao().getAllAccounts();
         });
     }
 
