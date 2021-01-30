@@ -1,7 +1,6 @@
 package com.junia.isen.m1_devsec_sa;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -22,6 +21,7 @@ import com.junia.isen.m1_devsec_sa.model.Account;
 import com.junia.isen.m1_devsec_sa.model.User;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -35,7 +35,6 @@ public class MainActivity extends AppCompatActivity {
     Executor executor; //object that executes submitted Runnable tasks
     BiometricPrompt biometricPrompt;
     BiometricPrompt.PromptInfo promptInfo;
-    private boolean authorized = false;
 
     // API UTILITIES //
     private UserDatabase uDb;
@@ -43,19 +42,9 @@ public class MainActivity extends AppCompatActivity {
     public static User myUser;
     public static List<Account> myAccountsList;
     private BankApiService bankApiService;
-    private Executor backgroundExecutor = Executors.newSingleThreadExecutor();
+    private final Executor backgroundExecutor = Executors.newSingleThreadExecutor();
 
     private ListView simpleListView;
-
-    // array objects
-    String wordList[] = {"J'ai", "inséré", "des", "trucs", "au", "pif", "pour", "tester", "ma", "page", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."};
-
-
-
 
 
     @Override
@@ -86,17 +75,17 @@ public class MainActivity extends AppCompatActivity {
                     // Code here executes on main thread after user presses button
                     Toast.makeText(getApplicationContext(),"requête en cours",Toast.LENGTH_SHORT).show();
                     refreshData();
-                    text.setText((CharSequence) myUser.lastname + " " + myUser.name);
+                    String userToDisplay = myUser.lastname + " " + myUser.name;
+                    text.setText(userToDisplay);
                     simpleListView = (ListView) findViewById(R.id.container);
-                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(getApplicationContext(), R.layout.item_view, R.id.containerItem, wordList);
+                    List<String> accountsListToDisplay = new ArrayList<>();
+                    for (Account account : myAccountsList) {
+                        accountsListToDisplay.add(account.account_name + "\n" + account.iban + "\n" + account.amount + account.currency);
+                    }
+                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.item_view, R.id.containerItem, accountsListToDisplay);
                     simpleListView.setAdapter(arrayAdapter);
                 }
             });
-
-
-
-
-            // display accounts and user
         }
     }
 
@@ -221,7 +210,6 @@ public class MainActivity extends AppCompatActivity {
             if(responseAccounts.isSuccessful() && responseUser.isSuccessful()){
                 List<Account> accounts = responseAccounts.body();
                 User user = responseUser.body();
-                Log.w("Bank APP","Accounts: "+ accounts.size());
 
                 // Save accounts in db
                 for(Account account : accounts){
@@ -231,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
                 uDb.UserDao().insert(user);
             }
             else{
-                Log.w("Bank APP","resquest error");
+                // todo display error
             }
         } catch (IOException e) {
             e.printStackTrace();
