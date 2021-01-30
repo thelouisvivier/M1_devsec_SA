@@ -68,19 +68,20 @@ public class MainActivity extends AppCompatActivity {
     private void startUi(Bundle savedInstanceState){
         if(savedInstanceState == null){
             setContentView(R.layout.activity_main); //set initial view
-            final Button button = findViewById(R.id.mybutton);
-            final TextView text = findViewById(R.id.accountName);
+            final Button button = findViewById(R.id.refreshButton);
+            final TextView userInfoTextView = findViewById(R.id.userInfo);
             button.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     // Code here executes on main thread after user presses button
                     Toast.makeText(getApplicationContext(),"requête en cours",Toast.LENGTH_SHORT).show();
                     refreshData();
                     String userToDisplay = myUser.lastname + " " + myUser.name;
-                    text.setText(userToDisplay);
+                    userInfoTextView.setText(userToDisplay);
                     simpleListView = (ListView) findViewById(R.id.container);
+
                     List<String> accountsListToDisplay = new ArrayList<>();
                     for (Account account : myAccountsList) {
-                        accountsListToDisplay.add(account.account_name + "\n" + account.iban + "\n" + account.amount + account.currency);
+                        accountsListToDisplay.add("Compte : " + account.account_name + "\n" + "IBAN : " + account.iban + "\n" + "Solde : " + account.amount + account.currency);
                     }
                     ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.item_view, R.id.containerItem, accountsListToDisplay);
                     simpleListView.setAdapter(arrayAdapter);
