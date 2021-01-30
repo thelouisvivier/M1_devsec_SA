@@ -193,6 +193,7 @@ public class MainActivity extends AppCompatActivity {
             myUser = uDb.UserDao().getUser();
             myAccountsList = accDb.AccountsDao().getAllAccounts();
             runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this,"Informations rafraichies !",Toast.LENGTH_LONG).show(); // Display in toast
                 fillUi();
             });
         });
