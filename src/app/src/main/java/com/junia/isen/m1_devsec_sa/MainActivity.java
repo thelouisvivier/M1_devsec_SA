@@ -69,25 +69,32 @@ public class MainActivity extends AppCompatActivity {
         if(savedInstanceState == null){
             setContentView(R.layout.activity_main); //set initial view
             final Button button = findViewById(R.id.refreshButton);
-            final TextView userInfoTextView = findViewById(R.id.userInfo);
+            fillUi();
+
             button.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     // Code here executes on main thread after user presses button
                     Toast.makeText(getApplicationContext(),"requête en cours",Toast.LENGTH_SHORT).show();
                     refreshData();
-                    String userToDisplay = myUser.lastname + " " + myUser.name;
-                    userInfoTextView.setText(userToDisplay);
-                    simpleListView = (ListView) findViewById(R.id.container);
-
-                    List<String> accountsListToDisplay = new ArrayList<>();
-                    for (Account account : myAccountsList) {
-                        accountsListToDisplay.add("Compte : " + account.account_name + "\n" + "IBAN : " + account.iban + "\n" + "Solde : " + account.amount + account.currency);
-                    }
-                    ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.item_view, R.id.containerItem, accountsListToDisplay);
-                    simpleListView.setAdapter(arrayAdapter);
                 }
             });
         }
+    }
+
+
+    private void fillUi(){
+        final TextView userInfoTextView = findViewById(R.id.userInfo);
+
+        String userToDisplay = myUser.lastname + " " + myUser.name;
+        userInfoTextView.setText(userToDisplay);
+        simpleListView = (ListView) findViewById(R.id.container);
+
+        List<String> accountsListToDisplay = new ArrayList<>();
+        for (Account account : myAccountsList) {
+            accountsListToDisplay.add("Compte : " + account.account_name + "\n" + "IBAN : " + account.iban + "\n" + "Solde : " + account.amount + account.currency);
+        }
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getApplicationContext(), R.layout.item_view, R.id.containerItem, accountsListToDisplay);
+        simpleListView.setAdapter(arrayAdapter);
     }
 
 
@@ -106,7 +113,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                Toast.makeText(MainActivity.this,"Success",Toast.LENGTH_LONG).show(); // Display in toast
                 startBackgroundThread(savedInstanceState);
             }
 
@@ -182,18 +188,28 @@ public class MainActivity extends AppCompatActivity {
                 .build();
         bankApiService = retrofit.create(BankApiService.class);
 
-        //New thread pour la bdd
-        backgroundExecutor.execute(()-> {
-            uDb = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "user_database.db").build();
-            accDb = Room.databaseBuilder(getApplicationContext(), AccountsDatabase.class, "accounts_database.db").build();
-        });
-
-
         backgroundExecutor.execute(()-> {
             loadFromApiAndSave();
             myUser = uDb.UserDao().getUser();
             myAccountsList = accDb.AccountsDao().getAllAccounts();
+            runOnUiThread(() -> {
+                fillUi();
+            });
         });
+    }
+
+
+    public boolean isOnline() {
+        Runtime runtime = Runtime.getRuntime();
+        try {
+            Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int     exitValue = ipProcess.waitFor();
+            return (exitValue == 0);
+        }
+        catch (IOException e)          { e.printStackTrace(); }
+        catch (InterruptedException e) { e.printStackTrace(); }
+
+        return false;
     }
 
 
@@ -205,25 +221,35 @@ public class MainActivity extends AppCompatActivity {
     // ********************************************** //
     private void loadFromApiAndSave(){
         // Get user + accounts from API
-        try {
-            Response<List<Account>> responseAccounts = bankApiService.getAccounts().execute();
-            Response<User> responseUser = bankApiService.getUser().execute();
-            if(responseAccounts.isSuccessful() && responseUser.isSuccessful()){
-                List<Account> accounts = responseAccounts.body();
-                User user = responseUser.body();
+        if(isOnline()){
+            try {
+                Response<List<Account>> responseAccounts = bankApiService.getAccounts().execute();
+                Response<User> responseUser = bankApiService.getUser().execute();
+                if(responseAccounts.isSuccessful() && responseUser.isSuccessful()){
+                    List<Account> accounts = responseAccounts.body();
+                    User user = responseUser.body();
 
-                // Save accounts in db
-                for(Account account : accounts){
-                    accDb.AccountsDao().insert(account);
+                    // Save accounts in db
+                    for(Account account : accounts){
+                        accDb.AccountsDao().insert(account);
+                    }
+                    // save user in db
+                    uDb.UserDao().insert(user);
                 }
-                // save user in db
-                uDb.UserDao().insert(user);
+                else{
+                    runOnUiThread(() -> {
+                        Toast.makeText(MainActivity.this,"Erreur de connexion à l'API",Toast.LENGTH_LONG).show(); // Display in toast
+                    });
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            else{
-                // todo display error
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+        else{
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this,"Pas de connexion à internet",Toast.LENGTH_LONG).show(); // Display in toast
+            });
+        }
+
     }
 }
