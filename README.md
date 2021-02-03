@@ -23,3 +23,5 @@ Here a simple screen of our attempt just to run a specific activity prompted fro
 <br><img src="img/scrn2.png" alt="screenshot2" height="300"/>
 
 ## App Screenshots
+<img src="img/scrn3.png" alt="screenshot3"/>
+<img src="img/scrn4.png" alt="screenshot4"/>
