@@ -87,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void fillUi(){
         final TextView userInfoTextView = findViewById(R.id.userInfo);
-
         String userToDisplay = myUser.lastname + " " + myUser.name;
         userInfoTextView.setText(userToDisplay);
         simpleListView = (ListView) findViewById(R.id.container);
@@ -156,8 +155,9 @@ public class MainActivity extends AppCompatActivity {
     // Start bg thread to get data then start app     //
     // ********************************************** //
     private void startBackgroundThread(Bundle savedInstanceState){
+        String password = getIntent().getStringExtra("password");
         SQLiteDatabase.loadLibs(this);
-        final byte[] passphrase = SQLiteDatabase.getBytes("userEnteredPassphrase".toCharArray());
+        final byte[] passphrase = SQLiteDatabase.getBytes(password.toCharArray());
         final SupportFactory factory = new SupportFactory(passphrase);
 
         Retrofit retrofit = new Retrofit.Builder()
