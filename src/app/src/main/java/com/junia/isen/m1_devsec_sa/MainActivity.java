@@ -170,7 +170,8 @@ public class MainActivity extends AppCompatActivity {
         backgroundExecutor.execute(()-> {
             uDb = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "user_database.db")
                     .openHelperFactory(factory).build();
-            accDb = Room.databaseBuilder(getApplicationContext(), AccountsDatabase.class, "accounts_database.db").build();
+            accDb = Room.databaseBuilder(getApplicationContext(), AccountsDatabase.class, "accounts_database.db")
+                    .openHelperFactory(factory).build();
         });
 
 
