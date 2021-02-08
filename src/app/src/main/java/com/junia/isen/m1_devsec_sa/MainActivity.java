@@ -20,6 +20,9 @@ import com.junia.isen.m1_devsec_sa.database.UserDatabase;
 import com.junia.isen.m1_devsec_sa.model.Account;
 import com.junia.isen.m1_devsec_sa.model.User;
 
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SupportFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void fillUi(){
         final TextView userInfoTextView = findViewById(R.id.userInfo);
-
         String userToDisplay = myUser.lastname + " " + myUser.name;
         userInfoTextView.setText(userToDisplay);
         simpleListView = (ListView) findViewById(R.id.container);
@@ -153,6 +155,11 @@ public class MainActivity extends AppCompatActivity {
     // Start bg thread to get data then start app     //
     // ********************************************** //
     private void startBackgroundThread(Bundle savedInstanceState){
+        String password = getIntent().getStringExtra("password");
+        SQLiteDatabase.loadLibs(this);
+        final byte[] passphrase = SQLiteDatabase.getBytes(password.toCharArray());
+        final SupportFactory factory = new SupportFactory(passphrase);
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://6007f1a4309f8b0017ee5022.mockapi.io/api/m1/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -161,8 +168,10 @@ public class MainActivity extends AppCompatActivity {
 
         //New thread pour la bdd
         backgroundExecutor.execute(()-> {
-            uDb = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "user_database.db").build();
-            accDb = Room.databaseBuilder(getApplicationContext(), AccountsDatabase.class, "accounts_database.db").build();
+            uDb = Room.databaseBuilder(getApplicationContext(), UserDatabase.class, "user_database.db")
+                    .openHelperFactory(factory).build();
+            accDb = Room.databaseBuilder(getApplicationContext(), AccountsDatabase.class, "accounts_database.db")
+                    .openHelperFactory(factory).build();
         });
 
 
