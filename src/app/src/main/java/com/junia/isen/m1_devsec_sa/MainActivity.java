@@ -2,6 +2,7 @@ package com.junia.isen.m1_devsec_sa;
 
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -48,15 +49,58 @@ public class MainActivity extends AppCompatActivity {
     private final Executor backgroundExecutor = Executors.newSingleThreadExecutor();
 
     private ListView simpleListView;
+    private Bundle savedInstanceState;
+    private Boolean paused = false;
+    private Boolean stopped = false;
 
 
     @Override
 
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle sIS) {
+        savedInstanceState = sIS;
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
 
         // ask for auth
-        askForAuth(savedInstanceState);
+        startBackgroundThread(savedInstanceState);
+    }
+
+    @Override
+
+    protected void onStart() {
+        super.onStart();
+        if (stopped){
+            // ask for auth
+            askForAuth(savedInstanceState);
+            stopped = false;
+        }
+    }
+
+    @Override
+
+    protected void onResume() {
+        super.onResume();
+        if (paused){
+            // ask for auth
+            askForAuth(savedInstanceState);
+            paused = false;
+        }
+    }
+
+    @Override
+
+    protected void onPause() {
+        super.onPause();
+        setContentView(R.layout.activity_blurred);
+        paused = true;
+    }
+
+    @Override
+
+    protected void onStop() {
+        super.onStop();
+        setContentView(R.layout.activity_blurred);
+        stopped = true;
     }
 
 
@@ -115,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                startBackgroundThread(savedInstanceState);
+                startUi(savedInstanceState);
             }
 
             // Auth error
